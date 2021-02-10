@@ -294,7 +294,7 @@ exports.load = function (dst, src) {
     }
   }
 };
-},{"./Constants":2,"./Exceptions":6,"./Grammar":7,"./Socket":20,"./URI":25,"./Utils":26}],2:[function(require,module,exports){
+},{"./Constants":2,"./Exceptions":6,"./Grammar":7,"./Socket":22,"./URI":27,"./Utils":28}],2:[function(require,module,exports){
 "use strict";
 
 var pkg = require('../package.json');
@@ -470,7 +470,7 @@ module.exports = {
   CONNECTION_RECOVERY_MAX_INTERVAL: 30,
   CONNECTION_RECOVERY_MIN_INTERVAL: 2
 };
-},{"../package.json":38}],3:[function(require,module,exports){
+},{"../package.json":40}],3:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -748,7 +748,7 @@ module.exports = /*#__PURE__*/function () {
 
   return Dialog;
 }();
-},{"./Constants":2,"./Dialog/RequestSender":4,"./SIPMessage":19,"./Transactions":22,"./Utils":26,"debug":30}],4:[function(require,module,exports){
+},{"./Constants":2,"./Dialog/RequestSender":4,"./SIPMessage":21,"./Transactions":24,"./Utils":28,"debug":32}],4:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -871,7 +871,7 @@ module.exports = /*#__PURE__*/function () {
 
   return DialogRequestSender;
 }();
-},{"../Constants":2,"../RTCSession":12,"../RequestSender":18,"../Transactions":22}],5:[function(require,module,exports){
+},{"../Constants":2,"../RTCSession":14,"../RequestSender":20,"../Transactions":24}],5:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1081,7 +1081,7 @@ module.exports = /*#__PURE__*/function () {
 
   return DigestAuthentication;
 }();
-},{"./Utils":26,"debug":30}],6:[function(require,module,exports){
+},{"./Utils":28,"debug":32}],6:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -16098,7 +16098,7 @@ module.exports = function () {
   result.SyntaxError.prototype = Error.prototype;
   return result;
 }();
-},{"./NameAddrHeader":10,"./URI":25}],8:[function(require,module,exports){
+},{"./NameAddrHeader":12,"./URI":27}],8:[function(require,module,exports){
 "use strict";
 
 var pkg = require('../package.json');
@@ -16119,6 +16119,8 @@ var Grammar = require('./Grammar');
 
 var WebSocketInterface = require('./WebSocketInterface');
 
+var RTCPeerMediaConnection = require('./MediaConnection/RTCPeerMediaConnection');
+
 var debug = require('debug')('JsSIP');
 
 debug('version %s', pkg.version);
@@ -16135,6 +16137,7 @@ module.exports = {
   NameAddrHeader: NameAddrHeader,
   WebSocketInterface: WebSocketInterface,
   Grammar: Grammar,
+  RTCPeerMediaConnection: RTCPeerMediaConnection,
   // Expose the debug module.
   debug: require('debug'),
 
@@ -16147,7 +16150,309 @@ module.exports = {
   }
 
 };
-},{"../package.json":38,"./Constants":2,"./Exceptions":6,"./Grammar":7,"./NameAddrHeader":10,"./UA":24,"./URI":25,"./Utils":26,"./WebSocketInterface":27,"debug":30}],9:[function(require,module,exports){
+},{"../package.json":40,"./Constants":2,"./Exceptions":6,"./Grammar":7,"./MediaConnection/RTCPeerMediaConnection":10,"./NameAddrHeader":12,"./UA":26,"./URI":27,"./Utils":28,"./WebSocketInterface":29,"debug":32}],9:[function(require,module,exports){
+"use strict";
+
+var Utils = require('./Utils');
+
+var Grammar = require('./Grammar');
+
+var debugerror = require('debug')('JsSIP:ERROR:Socket');
+
+debugerror.log = console.warn.bind(console);
+/**
+ * Interface documentation: https://jssip.net/documentation/$last_version/api/mediaconnection/
+ *
+ * interface MediaConnection {
+ *  attribute String example
+ *
+ *  method receiveSdpOffer(sdp);
+ *  method receiveSdpAnswer(sdp);
+ *  method getLocalSdp();
+ *  method addTracks([tracks]);
+ *  method removeTracks([tracks]);
+ *
+ *  attribute EventHandler onNewTrack
+ *  attribute EventHandler onIceCandidate
+ *  attribute EventHandler onClose
+ *  attribute EventHandler icegatheringstatechange
+ *
+ * }
+ *
+ */
+
+exports.isMediaConnection = function (mediaConnection) {
+  // Ignore if an array is given.
+  if (Array.isArray(mediaConnection)) {
+    return false;
+  }
+
+  if (typeof mediaConnection === 'undefined') {
+    debugerror('undefined JsSIP.MediaConnection instance');
+    return false;
+  } // Check Properties.
+
+
+  try {// if (!Utils.isString(socket.url))
+    // {
+    //   debugerror('missing or invalid JsSIP.Socket url property');
+    //   throw new Error();
+    // }
+  } catch (e) {
+    return false;
+  } // Check Methods.
+
+
+  try {
+    ['receiveSdpOffer', 'receiveSdpAnswer', 'setLocalSdp', 'getLocalSdp', 'addTrack', 'removeTracks'].forEach(function (method) {
+      if (!Utils.isFunction(mediaConnection[method])) {
+        debugerror("missing or invalid JsSIP.MediaConnector method: ".concat(method));
+        console.log("missing or invalid JsSIP.MediaConnector method: ".concat(method));
+        throw new Error();
+      }
+    });
+  } catch (e) {
+    return false;
+  }
+
+  return true;
+};
+},{"./Grammar":7,"./Utils":28,"debug":32}],10:[function(require,module,exports){
+"use strict";
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+var EventEmitter = require('events').EventEmitter;
+
+module.exports = /*#__PURE__*/function (_EventEmitter) {
+  _inherits(RTCPeerMediaConnection, _EventEmitter);
+
+  var _super = _createSuper(RTCPeerMediaConnection);
+
+  function RTCPeerMediaConnection() {
+    var _this;
+
+    _classCallCheck(this, RTCPeerMediaConnection);
+
+    _this = _super.call(this);
+    _this._type = "BrowserMediaConnection";
+    return _this;
+  }
+
+  _createClass(RTCPeerMediaConnection, [{
+    key: "setup",
+    value: function setup(pcConfig, rtcConstraints) {
+      console.log("***** PC CONFIG: ", pcConfig);
+      console.log("***** RTC constraints: ", rtcConstraints);
+      this.rtcPeerConnection = new RTCPeerConnection(pcConfig, rtcConstraints);
+    }
+  }, {
+    key: "receiveSdpOffer",
+    value: function receiveSdpOffer(options) {
+      var _this2 = this;
+
+      return this.rtcPeerConnection.createOffer(options).then(function (offer) {
+        _this2.setLocalSdp(offer);
+
+        return offer;
+      });
+    }
+  }, {
+    key: "receiveSdpAnswer",
+    value: function receiveSdpAnswer(options) {
+      var _this3 = this;
+
+      return this.rtcPeerConnection.createAnswer(options).then(function (offer) {
+        _this3.setLocalSdp(offer);
+
+        return offer;
+      });
+    }
+  }, {
+    key: "registerIceUpdates",
+    value: function registerIceUpdates(constraints, type, callback) {
+      var _this4 = this;
+
+      if (this.iceGatheringState === 'complete' && (!constraints || !constraints.iceRestart)) {
+        // Move out
+        //this._rtcReady = true;
+        var e = {
+          originator: 'local',
+          type: type,
+          sdp: this.getLocalSdp().sdp
+        };
+        callback('ready', e);
+        return Promise.resolve(e.sdp);
+      }
+
+      return new Promise(function (resolve) {
+        var finished = false;
+        var iceCandidateListener;
+        var iceGatheringStateListener;
+
+        var ready = function ready() {
+          _this4.rtcPeerConnection.removeEventListener('icecandidate', iceCandidateListener);
+
+          _this4.rtcPeerConnection.removeEventListener('icegatheringstatechange', iceGatheringStateListener);
+
+          finished = true;
+          var e = {
+            originator: 'local',
+            type: type,
+            sdp: _this4.getLocalSdp().sdp
+          };
+          callback('ready', e);
+          resolve(e.sdp);
+        };
+
+        _this4.rtcPeerConnection.addEventListener('icecandidate', iceCandidateListener = function iceCandidateListener(event) {
+          var candidate = event.candidate;
+
+          if (candidate) {
+            callback('icecandidate', {
+              candidate: candidate,
+              ready: ready
+            });
+          } else if (!finished) {
+            ready();
+          }
+        });
+
+        _this4.rtcPeerConnection.addEventListener('icegatheringstatechange', iceGatheringStateListener = function iceGatheringStateListener() {
+          if (_this4.iceGatheringState === 'complete' && !finished) {
+            ready();
+          }
+        });
+      });
+    }
+  }, {
+    key: "prepareStreams",
+    value: function prepareStreams(mediaConstraints) {
+      var _this5 = this;
+
+      return navigator.mediaDevices.getUserMedia(mediaConstraints).then(function (stream) {
+        stream.getTracks().forEach(function (track) {
+          _this5.addTrack(track, stream);
+        });
+        return stream;
+      });
+    }
+  }, {
+    key: "onIceConnectionEvent",
+    value: function onIceConnectionEvent(callback) {
+      var _this6 = this;
+
+      this.rtcPeerConnection.addEventListener('iceconnectionstatechange', function () {
+        callback(_this6.iceConnectionState);
+      });
+    } // Used by exposed peer-connection (tryit-jssip)
+
+  }, {
+    key: "addEventListener",
+    value: function addEventListener(onEvent, callback) {
+      this.rtcPeerConnection.addEventListener(onEvent, callback);
+    }
+  }, {
+    key: "getSenders",
+    value: function getSenders() {
+      return this.rtcPeerConnection.getSenders();
+    }
+  }, {
+    key: "close",
+    value: function close() {
+      // TODO: close streams
+      this.rtcPeerConnection.close();
+    } //TODO: can we do more?
+
+  }, {
+    key: "setRemoteDescription",
+    value: function setRemoteDescription(sdp) {
+      return this.rtcPeerConnection.setRemoteDescription(sdp);
+    } //TODO: Only one RtcSession consumer!
+
+  }, {
+    key: "getLocalSdp",
+    value: function getLocalSdp() {
+      return this.rtcPeerConnection.localDescription;
+    } // TODO: make private
+
+  }, {
+    key: "setLocalSdp",
+    //TODO: make private
+    value: function setLocalSdp(sdp) {
+      return this.rtcPeerConnection.setLocalDescription(sdp);
+    } //TODO: make private
+
+  }, {
+    key: "addTrack",
+    value: function addTrack(track, stream) {
+      this.rtcPeerConnection.addTrack(track, stream);
+    } // TODO: make private
+
+  }, {
+    key: "removeTracks",
+    value: function removeTracks() {
+      this.rtcPeerConnection.removeTracks();
+    } // TODO: make private
+
+  }, {
+    key: "getLocalStreams",
+    value: function getLocalStreams() {
+      return this.rtcPeerConnection.getLocalStreams();
+    } // TODO: make private
+
+  }, {
+    key: "getRemoteStreams",
+    value: function getRemoteStreams() {
+      return this.rtcPeerConnection.getRemoteStreams();
+    }
+  }, {
+    key: "type",
+    get: function get() {
+      return this._type;
+    } // Getter
+
+  }, {
+    key: "signalingState",
+    get: function get() {
+      this.rtcPeerConnection.signalingState;
+    }
+  }, {
+    key: "iceConnectionState",
+    get: function get() {
+      this.rtcPeerConnection.iceConnectionState;
+    } // TODO: make private
+
+  }, {
+    key: "iceGatheringState",
+    get: function get() {
+      return this.rtcPeerConnection.iceGatheringState;
+    }
+  }]);
+
+  return RTCPeerMediaConnection;
+}(EventEmitter);
+},{"events":31}],11:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -16453,7 +16758,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
   return Message;
 }(EventEmitter);
-},{"./Constants":2,"./Exceptions":6,"./RequestSender":18,"./SIPMessage":19,"./Utils":26,"debug":30,"events":29}],10:[function(require,module,exports){
+},{"./Constants":2,"./Exceptions":6,"./RequestSender":20,"./SIPMessage":21,"./Utils":28,"debug":32,"events":31}],12:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -16587,7 +16892,7 @@ module.exports = /*#__PURE__*/function () {
 
   return NameAddrHeader;
 }();
-},{"./Grammar":7,"./URI":25}],11:[function(require,module,exports){
+},{"./Grammar":7,"./URI":27}],13:[function(require,module,exports){
 "use strict";
 
 function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
@@ -16919,7 +17224,7 @@ function parseHeader(message, data, headerStart, headerEnd) {
     return true;
   }
 }
-},{"./Grammar":7,"./SIPMessage":19,"debug":30}],12:[function(require,module,exports){
+},{"./Grammar":7,"./SIPMessage":21,"debug":32}],14:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -16981,6 +17286,9 @@ var RTCSession_ReferSubscriber = require('./RTCSession/ReferSubscriber');
 
 var URI = require('./URI');
 
+var _require = require("./MediaConnection"),
+    isMediaConnection = _require.isMediaConnection;
+
 var debug = require('debug')('JsSIP:RTCSession');
 
 var debugerror = require('debug')('JsSIP:ERROR:RTCSession');
@@ -17021,7 +17329,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
     }
   }]);
 
-  function RTCSession(ua) {
+  function RTCSession(ua, mediaConnection) {
     var _this;
 
     _classCallCheck(this, RTCSession);
@@ -17035,9 +17343,9 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
     _this._earlyDialogs = {};
     _this._contact = null;
     _this._from_tag = null;
-    _this._to_tag = null; // The RTCPeerConnection instance (public attribute).
+    _this._to_tag = null; // The RTCPeerMediaConnection or custom (nodejs) instance (public attribute).
 
-    _this._connection = null; // Prevent races on serial PeerConnction operations.
+    _this._mediaConnection = mediaConnection; // Prevent races on serial PeerConnction operations.
 
     _this._connectionPromiseQueue = Promise.resolve(); // Incoming/Outgoing request being currently processed.
 
@@ -17185,11 +17493,12 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
       if (this._status !== C.STATUS_NULL) {
         throw new Exceptions.InvalidStateError(this._status);
-      } // Check WebRTC support.
+      }
 
+      var mediaConnection = this._mediaConnection; // Check support.
 
-      if (!window.RTCPeerConnection) {
-        throw new Exceptions.NotSupportedError('WebRTC not supported');
+      if (!isMediaConnection(mediaConnection)) {
+        throw new Exceptions.NotSupportedError('No valid browser or node media connection provided.');
       } // Check target validity.
 
 
@@ -17251,7 +17560,8 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
       }
 
       this._request = new SIPMessage.InitialOutgoingInviteRequest(target, this._ua, requestParams, extraHeaders);
-      this._id = this._request.call_id + this._from_tag; // Create a new RTCPeerConnection instance.
+      this._id = this._request.call_id + this._from_tag; // Create a new configure instance.
+      // TODO: rename to configureRTCConnection
 
       this._createRTCConnection(pcConfig, rtcConstraints); // Set internal properties.
 
@@ -17364,6 +17674,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
       var _this3 = this;
 
       var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      var mediaConnection = arguments.length > 1 ? arguments[1] : undefined;
       debug('answer()');
       var request = this._request;
       var extraHeaders = Utils.cloneArray(options.extraHeaders);
@@ -17510,47 +17821,38 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
       // TODO: This may throw an error, should react.
 
 
-      this._createRTCConnection(pcConfig, rtcConstraints);
+      this._createRTCConnection(pcConfig, rtcConstraints, mediaConnection);
 
       Promise.resolve() // Handle local MediaStream.
       .then(function () {
         // A local MediaStream is given, use it.
         if (mediaStream) {
           return mediaStream;
-        } // Audio and/or video requested, prompt getUserMedia.
-        else if (mediaConstraints.audio || mediaConstraints.video) {
-            _this3._localMediaStreamLocallyGenerated = true;
-            return navigator.mediaDevices.getUserMedia(mediaConstraints)["catch"](function (error) {
-              if (_this3._status === C.STATUS_TERMINATED) {
-                throw new Error('terminated');
-              }
+        } else if (mediaConstraints.audio || mediaConstraints.video) {
+          // Audio and/or video requested, prompt getUserMedia.
+          _this3._localMediaStreamLocallyGenerated = true;
+          return mediaConnection.prepareStreams(mediaConstraints)["catch"](function (error) {
+            if (_this3._status === C.STATUS_TERMINATED) {
+              throw new Error('terminated');
+            }
 
-              request.reply(480);
+            request.reply(480);
 
-              _this3._failed('local', null, JsSIP_C.causes.USER_DENIED_MEDIA_ACCESS);
+            _this3._failed('local', null, JsSIP_C.causes.USER_DENIED_MEDIA_ACCESS);
 
-              debugerror('emit "getusermediafailed" [error:%o]', error);
+            debugerror('emit "getusermediafailed" [error:%o]', error);
 
-              _this3.emit('getusermediafailed', error);
+            _this3.emit('getusermediafailed', error);
 
-              throw new Error('getUserMedia() failed');
-            });
-          }
-      }) // Attach MediaStream to RTCPeerconnection.
-      .then(function (stream) {
-        if (_this3._status === C.STATUS_TERMINATED) {
-          throw new Error('terminated');
-        }
-
-        _this3._localMediaStream = stream;
-
-        if (stream) {
-          stream.getTracks().forEach(function (track) {
-            _this3._connection.addTrack(track, stream);
+            throw new Error('getUserMedia() failed');
           });
         }
       }) // Set remote description.
       .then(function () {
+        if (_this3._status === C.STATUS_TERMINATED) {
+          throw new Error('terminated');
+        }
+
         if (_this3._late_sdp) {
           return;
         }
@@ -17569,7 +17871,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
           sdp: e.sdp
         });
         _this3._connectionPromiseQueue = _this3._connectionPromiseQueue.then(function () {
-          return _this3._connection.setRemoteDescription(offer);
+          return mediaConnection.setRemoteDescription(offer);
         })["catch"](function (error) {
           request.reply(488);
 
@@ -18247,7 +18549,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
                 sdp: e.sdp
               });
               this._connectionPromiseQueue = this._connectionPromiseQueue.then(function () {
-                return _this10._connection.setRemoteDescription(answer);
+                return _this10._mediaConnection.setRemoteDescription(answer);
               }).then(function () {
                 if (!_this10._is_confirmed) {
                   _this10._confirmed('remote', request);
@@ -18433,12 +18735,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "_close",
     value: function _close() {
-      debug('close()'); // Close local MediaStream if it was not given by the user.
-
-      if (this._localMediaStream && this._localMediaStreamLocallyGenerated) {
-        debug('close() | closing local MediaStream');
-        Utils.closeMediaStream(this._localMediaStream);
-      }
+      debug('close()');
 
       if (this._status === C.STATUS_TERMINATED) {
         return;
@@ -18446,9 +18743,9 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
       this._status = C.STATUS_TERMINATED; // Terminate RTC.
 
-      if (this._connection) {
+      if (this._mediaConnection) {
         try {
-          this._connection.close();
+          this._mediaConnection.close();
         } catch (error) {
           debugerror('close() | error closing the RTCPeerConnection: %o', error);
         }
@@ -18551,11 +18848,10 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
     value: function _createRTCConnection(pcConfig, rtcConstraints) {
       var _this12 = this;
 
-      this._connection = new RTCPeerConnection(pcConfig, rtcConstraints);
+      this._mediaConnection.setup(pcConfig, rtcConstraints);
 
-      this._connection.addEventListener('iceconnectionstatechange', function () {
-        var state = _this12._connection.iceConnectionState; // TODO: Do more with different states.
-
+      this._mediaConnection.onIceConnectionEvent(function (state) {
+        // TODO: Do more with different states.
         if (state === 'failed') {
           _this12.terminate({
             cause: JsSIP_C.causes.RTP_TIMEOUT,
@@ -18565,9 +18861,10 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
         }
       });
 
-      debug('emit "peerconnection"');
+      debug('emit "peerconnection"'); // Expose mediaConnection: bad?
+
       this.emit('peerconnection', {
-        peerconnection: this._connection
+        peerconnection: this._mediaConnection
       });
     }
   }, {
@@ -18577,12 +18874,13 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
       debug('createLocalDescription()');
       if (type !== 'offer' && type !== 'answer') throw new Error("createLocalDescription() | invalid type \"".concat(type, "\""));
-      var connection = this._connection;
+      var mediaConnection = this._mediaConnection;
       this._rtcReady = false;
       return Promise.resolve() // Create Offer or Answer.
       .then(function () {
         if (type === 'offer') {
-          return connection.createOffer(constraints)["catch"](function (error) {
+          return mediaConnection.receiveSdpOffer(constraints)["catch"](function (error) {
+            console.log("Can't create offer", error);
             debugerror('emit "peerconnection:createofferfailed" [error:%o]', error);
 
             _this13.emit('peerconnection:createofferfailed', error);
@@ -18590,7 +18888,8 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
             return Promise.reject(error);
           });
         } else {
-          return connection.createAnswer(constraints)["catch"](function (error) {
+          return mediaConnection.receiveSdpAnswer(constraints)["catch"](function (error) {
+            console.log("Can't create answer", error);
             debugerror('emit "peerconnection:createanswerfailed" [error:%o]', error);
 
             _this13.emit('peerconnection:createanswerfailed', error);
@@ -18598,72 +18897,19 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
             return Promise.reject(error);
           });
         }
-      }) // Set local description.
-      .then(function (desc) {
-        return connection.setLocalDescription(desc)["catch"](function (error) {
-          _this13._rtcReady = true;
-          debugerror('emit "peerconnection:setlocaldescriptionfailed" [error:%o]', error);
-
-          _this13.emit('peerconnection:setlocaldescriptionfailed', error);
-
-          return Promise.reject(error);
-        });
       }).then(function () {
-        // Resolve right away if 'pc.iceGatheringState' is 'complete'.
-        if (connection.iceGatheringState === 'complete' && (!constraints || !constraints.iceRestart)) {
-          _this13._rtcReady = true;
-          var e = {
-            originator: 'local',
-            type: type,
-            sdp: connection.localDescription.sdp
-          };
-          debug('emit "sdp"');
-
-          _this13.emit('sdp', e);
-
-          return Promise.resolve(e.sdp);
-        } // Add 'pc.onicencandidate' event handler to resolve on last candidate.
-
-
-        return new Promise(function (resolve) {
-          var finished = false;
-          var iceCandidateListener;
-          var iceGatheringStateListener;
-
-          var ready = function ready() {
-            connection.removeEventListener('icecandidate', iceCandidateListener);
-            connection.removeEventListener('icegatheringstatechange', iceGatheringStateListener);
-            finished = true;
+        return mediaConnection.registerIceUpdates(constraints, type, function (eventType, event) {
+          if (eventType === 'ready') {
             _this13._rtcReady = true;
-            var e = {
-              originator: 'local',
-              type: type,
-              sdp: connection.localDescription.sdp
-            };
             debug('emit "sdp"');
 
-            _this13.emit('sdp', e);
-
-            resolve(e.sdp);
-          };
-
-          connection.addEventListener('icecandidate', iceCandidateListener = function iceCandidateListener(event) {
-            var candidate = event.candidate;
-
-            if (candidate) {
-              _this13.emit('icecandidate', {
-                candidate: candidate,
-                ready: ready
-              });
-            } else if (!finished) {
-              ready();
-            }
-          });
-          connection.addEventListener('icegatheringstatechange', iceGatheringStateListener = function iceGatheringStateListener() {
-            if (connection.iceGatheringState === 'complete' && !finished) {
-              ready();
-            }
-          });
+            _this13.emit('sdp', event);
+          } else if (eventType === 'icecandidate') {
+            _this13.emit('icecandidate', {
+              candidate: event.candidate,
+              ready: event.ready
+            });
+          }
         });
       });
     }
@@ -19192,12 +19438,11 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
       Promise.resolve() // Get a stream if required.
       .then(function () {
         // A stream is given, let the app set events such as 'peerconnection' and 'connecting'.
-        if (mediaStream) {
+        if (_this21._mediaConnection.type === 'BrowserMediaConnection' && mediaStream) {
           return mediaStream;
         } // Request for user media access.
-        else if (mediaConstraints.audio || mediaConstraints.video) {
-            _this21._localMediaStreamLocallyGenerated = true;
-            return navigator.mediaDevices.getUserMedia(mediaConstraints)["catch"](function (error) {
+        else if (_this21._mediaConnection.type === 'BrowserMediaConnection' && mediaConstraints.audio || mediaConstraints.video) {
+            return _this21._mediaConnection.prepareStreams(mediaConstraints)["catch"](function (error) {
               if (_this21._status === C.STATUS_TERMINATED) {
                 throw new Error('terminated');
               }
@@ -19210,28 +19455,26 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
               throw error;
             });
+          } else {
+            return Promise.resolve();
           }
       }).then(function (stream) {
         if (_this21._status === C.STATUS_TERMINATED) {
           throw new Error('terminated');
-        }
-
-        _this21._localMediaStream = stream;
-
-        if (stream) {
-          stream.getTracks().forEach(function (track) {
-            _this21._connection.addTrack(track, stream);
-          });
         } // TODO: should this be triggered here?
 
 
         _this21._connecting(_this21._request);
 
-        return _this21._createLocalDescription('offer', rtcOfferConstraints)["catch"](function (error) {
-          _this21._failed('local', null, JsSIP_C.causes.WEBRTC_ERROR);
+        if (_this21._mediaConnection.type === 'BrowserMediaConnection') {
+          return _this21._createLocalDescription('offer', rtcOfferConstraints)["catch"](function (error) {
+            _this21._failed('local', null, JsSIP_C.causes.WEBRTC_ERROR);
 
-          throw error;
-        });
+            throw error;
+          });
+        } else {
+          return _this21._mediaConnection.getLocalSdp();
+        }
       }).then(function (desc) {
         if (_this21._is_canceled || _this21._status === C.STATUS_TERMINATED) {
           throw new Error('terminated');
@@ -19251,6 +19494,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
           return;
         }
 
+        console.log("Can't send invite!", error);
         debugerror(error);
       });
     }
@@ -19261,7 +19505,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "_getDTMFRTPSender",
     value: function _getDTMFRTPSender() {
-      var sender = this._connection.getSenders().find(function (rtpSender) {
+      var sender = this._mediaConnection.getSenders().find(function (rtpSender) {
         return rtpSender.track && rtpSender.track.kind === 'audio';
       });
 
@@ -19362,7 +19606,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
               sdp: e.sdp
             });
             this._connectionPromiseQueue = this._connectionPromiseQueue.then(function () {
-              return _this22._connection.setRemoteDescription(answer);
+              return _this22._mediaConnection.setRemoteDescription(answer);
             }).then(function () {
               return _this22._progress('remote', response);
             })["catch"](function (error) {
@@ -19406,17 +19650,16 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
             this._connectionPromiseQueue = this._connectionPromiseQueue.then(function () {
               // Be ready for 200 with SDP after a 180/183 with SDP.
               // We created a SDP 'answer' for it, so check the current signaling state.
-              if (_this22._connection.signalingState === 'stable') {
-                return _this22._connection.createOffer(_this22._rtcOfferConstraints).then(function (offer) {
-                  return _this22._connection.setLocalDescription(offer);
-                })["catch"](function (error) {
+              // TODO: Hide signalingState or name it: iceSignalingState()?
+              if (_this22._mediaConnection.signalingState === 'stable') {
+                return _this22._mediaConnection.receiveSdpOffer(_this22._rtcOfferConstraints)["catch"](function (error) {
                   _this22._acceptAndTerminate(response, 500, error.toString());
 
                   _this22._failed('local', response, JsSIP_C.causes.WEBRTC_ERROR);
                 });
               }
             }).then(function () {
-              _this22._connection.setRemoteDescription(_answer).then(function () {
+              _this22._mediaConnection.setRemoteDescription(_answer).then(function () {
                 // Handle Session Timers.
                 _this22._handleSessionTimersInIncomingResponse(response);
 
@@ -19547,7 +19790,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
           sdp: e.sdp
         });
         this._connectionPromiseQueue = this._connectionPromiseQueue.then(function () {
-          return _this24._connection.setRemoteDescription(answer);
+          return _this24._mediaConnection.setRemoteDescription(answer);
         }).then(function () {
           if (eventHandlers.succeeded) {
             eventHandlers.succeeded(response);
@@ -19695,7 +19938,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
             sdp: e.sdp
           });
           this._connectionPromiseQueue = this._connectionPromiseQueue.then(function () {
-            return _this26._connection.setRemoteDescription(answer);
+            return _this26._mediaConnection.setRemoteDescription(answer);
           }).then(function () {
             if (eventHandlers.succeeded) {
               eventHandlers.succeeded(response);
@@ -19954,7 +20197,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "_toggleMuteAudio",
     value: function _toggleMuteAudio(mute) {
-      var senders = this._connection.getSenders().filter(function (sender) {
+      var senders = this._mediaConnection.getSenders().filter(function (sender) {
         return sender.track && sender.track.kind === 'audio';
       });
 
@@ -19975,7 +20218,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "_toggleMuteVideo",
     value: function _toggleMuteVideo(mute) {
-      var senders = this._connection.getSenders().filter(function (sender) {
+      var senders = this._mediaConnection.getSenders().filter(function (sender) {
         return sender.track && sender.track.kind === 'video';
       });
 
@@ -20154,7 +20397,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "connection",
     get: function get() {
-      return this._connection;
+      return this._mediaConnection;
     }
   }, {
     key: "contact",
@@ -20203,7 +20446,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
   return RTCSession;
 }(EventEmitter);
-},{"./Constants":2,"./Dialog":3,"./Exceptions":6,"./RTCSession/DTMF":13,"./RTCSession/Info":14,"./RTCSession/ReferNotifier":15,"./RTCSession/ReferSubscriber":16,"./RequestSender":18,"./SIPMessage":19,"./Timers":21,"./Transactions":22,"./URI":25,"./Utils":26,"debug":30,"events":29,"sdp-transform":35}],13:[function(require,module,exports){
+},{"./Constants":2,"./Dialog":3,"./Exceptions":6,"./MediaConnection":9,"./RTCSession/DTMF":15,"./RTCSession/Info":16,"./RTCSession/ReferNotifier":17,"./RTCSession/ReferSubscriber":18,"./RequestSender":20,"./SIPMessage":21,"./Timers":23,"./Transactions":24,"./URI":27,"./Utils":28,"debug":32,"events":31,"sdp-transform":37}],15:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -20406,7 +20649,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
 
 module.exports.C = C;
-},{"../Constants":2,"../Exceptions":6,"../Utils":26,"debug":30,"events":29}],14:[function(require,module,exports){
+},{"../Constants":2,"../Exceptions":6,"../Utils":28,"debug":32,"events":31}],16:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -20546,7 +20789,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
   return Info;
 }(EventEmitter);
-},{"../Constants":2,"../Exceptions":6,"../Utils":26,"debug":30,"events":29}],15:[function(require,module,exports){
+},{"../Constants":2,"../Exceptions":6,"../Utils":28,"debug":32,"events":31}],17:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -20611,7 +20854,7 @@ module.exports = /*#__PURE__*/function () {
 
   return ReferNotifier;
 }();
-},{"../Constants":2,"debug":30}],16:[function(require,module,exports){
+},{"../Constants":2,"debug":32}],18:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -20793,7 +21036,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
   return ReferSubscriber;
 }(EventEmitter);
-},{"../Constants":2,"../Grammar":7,"../Utils":26,"debug":30,"events":29}],17:[function(require,module,exports){
+},{"../Constants":2,"../Grammar":7,"../Utils":28,"debug":32,"events":31}],19:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -21153,7 +21396,7 @@ module.exports = /*#__PURE__*/function () {
 
   return Registrator;
 }();
-},{"./Constants":2,"./RequestSender":18,"./SIPMessage":19,"./Utils":26,"debug":30}],18:[function(require,module,exports){
+},{"./Constants":2,"./RequestSender":20,"./SIPMessage":21,"./Utils":28,"debug":32}],20:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -21328,7 +21571,7 @@ module.exports = /*#__PURE__*/function () {
 
   return RequestSender;
 }();
-},{"./Constants":2,"./DigestAuthentication":5,"./Transactions":22,"debug":30}],19:[function(require,module,exports){
+},{"./Constants":2,"./DigestAuthentication":5,"./Transactions":24,"debug":32}],21:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -22183,7 +22426,7 @@ module.exports = {
   IncomingRequest: IncomingRequest,
   IncomingResponse: IncomingResponse
 };
-},{"./Constants":2,"./Grammar":7,"./NameAddrHeader":10,"./Utils":26,"debug":30,"sdp-transform":35}],20:[function(require,module,exports){
+},{"./Constants":2,"./Grammar":7,"./NameAddrHeader":12,"./Utils":28,"debug":32,"sdp-transform":37}],22:[function(require,module,exports){
 "use strict";
 
 var Utils = require('./Utils');
@@ -22257,7 +22500,7 @@ exports.isSocket = function (socket) {
 
   return true;
 };
-},{"./Grammar":7,"./Utils":26,"debug":30}],21:[function(require,module,exports){
+},{"./Grammar":7,"./Utils":28,"debug":32}],23:[function(require,module,exports){
 "use strict";
 
 var T1 = 500,
@@ -22279,7 +22522,7 @@ module.exports = {
   PROVISIONAL_RESPONSE_INTERVAL: 60000 // See RFC 3261 Section 13.3.1.1
 
 };
-},{}],22:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -23108,7 +23351,7 @@ module.exports = {
   InviteServerTransaction: InviteServerTransaction,
   checkTransaction: checkTransaction
 };
-},{"./Constants":2,"./SIPMessage":19,"./Timers":21,"debug":30,"events":29}],23:[function(require,module,exports){
+},{"./Constants":2,"./SIPMessage":21,"./Timers":23,"debug":32,"events":31}],25:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -23433,7 +23676,7 @@ module.exports = /*#__PURE__*/function () {
 
   return Transport;
 }();
-},{"./Constants":2,"./Socket":20,"debug":30}],24:[function(require,module,exports){
+},{"./Constants":2,"./Socket":22,"debug":32}],26:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -23522,7 +23765,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
     }
   }]);
 
-  function UA(configuration) {
+  function UA(configuration, mediaConnection) {
     var _this;
 
     _classCallCheck(this, UA);
@@ -23533,6 +23776,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
       credentials: {}
     };
     _this._configuration = Object.assign({}, config.settings);
+    _this._mediaConnection = mediaConnection;
     _this._dynConfiguration = {};
     _this._dialogs = {}; // User actions outside any session/dialog (MESSAGE).
 
@@ -23581,7 +23825,8 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
      * Resume UA after being closed.
      */
     value: function start() {
-      debug('start()');
+      console.log("********************** HIER!!!!!");
+      debug('start()!!!!');
 
       if (this._status === C.STATUS_INIT) {
         this._transport.connect();
@@ -23671,9 +23916,9 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
   }, {
     key: "call",
-    value: function call(target, options) {
+    value: function call(target, mediaConnection, options) {
       debug('call()');
-      var session = new RTCSession(this);
+      var session = new RTCSession(this, mediaConnection);
       session.connect(target, options);
       return session;
     }
@@ -24040,7 +24285,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
       if (!request.to_tag) {
         switch (method) {
           case JsSIP_C.INVITE:
-            if (window.RTCPeerConnection) {
+            if (this._mediaConnection) {
               // TODO
               if (request.hasHeader('replaces')) {
                 var replaces = request.replaces;
@@ -24456,7 +24701,7 @@ function onTransportData(data) {
     }
   }
 }
-},{"./Config":1,"./Constants":2,"./Exceptions":6,"./Message":9,"./Parser":11,"./RTCSession":12,"./Registrator":17,"./SIPMessage":19,"./Transactions":22,"./Transport":23,"./URI":25,"./Utils":26,"./sanityCheck":28,"debug":30,"events":29}],25:[function(require,module,exports){
+},{"./Config":1,"./Constants":2,"./Exceptions":6,"./Message":11,"./Parser":13,"./RTCSession":14,"./Registrator":19,"./SIPMessage":21,"./Transactions":24,"./Transport":25,"./URI":27,"./Utils":28,"./sanityCheck":30,"debug":32,"events":31}],27:[function(require,module,exports){
 "use strict";
 
 function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
@@ -24718,7 +24963,7 @@ module.exports = /*#__PURE__*/function () {
 
   return URI;
 }();
-},{"./Constants":2,"./Grammar":7,"./Utils":26}],26:[function(require,module,exports){
+},{"./Constants":2,"./Grammar":7,"./Utils":28}],28:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -25251,7 +25496,7 @@ exports.cloneObject = function (obj) {
   var fallback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
   return obj && Object.assign({}, obj) || fallback;
 };
-},{"./Constants":2,"./Grammar":7,"./URI":25}],27:[function(require,module,exports){
+},{"./Constants":2,"./Grammar":7,"./URI":27}],29:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -25429,7 +25674,7 @@ module.exports = /*#__PURE__*/function () {
 
   return WebSocketInterface;
 }();
-},{"./Grammar":7,"debug":30}],28:[function(require,module,exports){
+},{"./Grammar":7,"debug":32}],30:[function(require,module,exports){
 "use strict";
 
 function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
@@ -25681,7 +25926,7 @@ function reply(status_code) {
   response += '\r\n';
   transport.send(response);
 }
-},{"./Constants":2,"./SIPMessage":19,"./Utils":26,"debug":30}],29:[function(require,module,exports){
+},{"./Constants":2,"./SIPMessage":21,"./Utils":28,"debug":32}],31:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -26206,20 +26451,29 @@ function functionBindPolyfill(context) {
   };
 }
 
-},{}],30:[function(require,module,exports){
-(function (process){
+},{}],32:[function(require,module,exports){
+(function (process){(function (){
 /* eslint-env browser */
 
 /**
  * This is the web browser implementation of `debug()`.
  */
 
-exports.log = log;
 exports.formatArgs = formatArgs;
 exports.save = save;
 exports.load = load;
 exports.useColors = useColors;
 exports.storage = localstorage();
+exports.destroy = (() => {
+	let warned = false;
+
+	return () => {
+		if (!warned) {
+			warned = true;
+			console.warn('Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`.');
+		}
+	};
+})();
 
 /**
  * Colors.
@@ -26380,18 +26634,14 @@ function formatArgs(args) {
 }
 
 /**
- * Invokes `console.log()` when available.
- * No-op when `console.log` is not a "function".
+ * Invokes `console.debug()` when available.
+ * No-op when `console.debug` is not a "function".
+ * If `console.debug` is not available, falls back
+ * to `console.log`.
  *
  * @api public
  */
-function log(...args) {
-	// This hackery is required for IE8/9, where
-	// the `console.log` function doesn't have 'apply'
-	return typeof console === 'object' &&
-		console.log &&
-		console.log(...args);
-}
+exports.log = console.debug || console.log || (() => {});
 
 /**
  * Save `namespaces`.
@@ -26473,8 +26723,8 @@ formatters.j = function (v) {
 	}
 };
 
-}).call(this,require('_process'))
-},{"./common":31,"_process":33}],31:[function(require,module,exports){
+}).call(this)}).call(this,require('_process'))
+},{"./common":33,"_process":35}],33:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -26489,15 +26739,11 @@ function setup(env) {
 	createDebug.enable = enable;
 	createDebug.enabled = enabled;
 	createDebug.humanize = require('ms');
+	createDebug.destroy = destroy;
 
 	Object.keys(env).forEach(key => {
 		createDebug[key] = env[key];
 	});
-
-	/**
-	* Active `debug` instances.
-	*/
-	createDebug.instances = [];
 
 	/**
 	* The currently active debug mode names, and names to skip.
@@ -26540,6 +26786,7 @@ function setup(env) {
 	*/
 	function createDebug(namespace) {
 		let prevTime;
+		let enableOverride = null;
 
 		function debug(...args) {
 			// Disabled?
@@ -26569,7 +26816,7 @@ function setup(env) {
 			args[0] = args[0].replace(/%([a-zA-Z%])/g, (match, format) => {
 				// If we encounter an escaped % then don't increase the array index
 				if (match === '%%') {
-					return match;
+					return '%';
 				}
 				index++;
 				const formatter = createDebug.formatters[format];
@@ -26592,31 +26839,26 @@ function setup(env) {
 		}
 
 		debug.namespace = namespace;
-		debug.enabled = createDebug.enabled(namespace);
 		debug.useColors = createDebug.useColors();
-		debug.color = selectColor(namespace);
-		debug.destroy = destroy;
+		debug.color = createDebug.selectColor(namespace);
 		debug.extend = extend;
-		// Debug.formatArgs = formatArgs;
-		// debug.rawLog = rawLog;
+		debug.destroy = createDebug.destroy; // XXX Temporary. Will be removed in the next major release.
 
-		// env-specific initialization logic for debug instances
+		Object.defineProperty(debug, 'enabled', {
+			enumerable: true,
+			configurable: false,
+			get: () => enableOverride === null ? createDebug.enabled(namespace) : enableOverride,
+			set: v => {
+				enableOverride = v;
+			}
+		});
+
+		// Env-specific initialization logic for debug instances
 		if (typeof createDebug.init === 'function') {
 			createDebug.init(debug);
 		}
 
-		createDebug.instances.push(debug);
-
 		return debug;
-	}
-
-	function destroy() {
-		const index = createDebug.instances.indexOf(this);
-		if (index !== -1) {
-			createDebug.instances.splice(index, 1);
-			return true;
-		}
-		return false;
 	}
 
 	function extend(namespace, delimiter) {
@@ -26655,11 +26897,6 @@ function setup(env) {
 			} else {
 				createDebug.names.push(new RegExp('^' + namespaces + '$'));
 			}
-		}
-
-		for (i = 0; i < createDebug.instances.length; i++) {
-			const instance = createDebug.instances[i];
-			instance.enabled = createDebug.enabled(instance.namespace);
 		}
 	}
 
@@ -26735,6 +26972,14 @@ function setup(env) {
 		return val;
 	}
 
+	/**
+	* XXX DO NOT USE. This is a temporary stub function.
+	* XXX It WILL be removed in the next major release.
+	*/
+	function destroy() {
+		console.warn('Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`.');
+	}
+
 	createDebug.enable(createDebug.load());
 
 	return createDebug;
@@ -26742,7 +26987,7 @@ function setup(env) {
 
 module.exports = setup;
 
-},{"ms":32}],32:[function(require,module,exports){
+},{"ms":34}],34:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -26906,7 +27151,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],33:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -27092,7 +27337,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],34:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 var grammar = module.exports = {
   v: [{
     name: 'version',
@@ -27188,7 +27433,7 @@ var grammar = module.exports = {
       push: 'rtcpFbTrrInt',
       reg: /^rtcp-fb:(\*|\d*) trr-int (\d*)/,
       names: ['payload', 'value'],
-      format: 'rtcp-fb:%d trr-int %d'
+      format: 'rtcp-fb:%s trr-int %d'
     },
     {
       // a=rtcp-fb:98 nack rpsi
@@ -27588,7 +27833,7 @@ Object.keys(grammar).forEach(function (key) {
   });
 });
 
-},{}],35:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 var parser = require('./parser');
 var writer = require('./writer');
 
@@ -27601,7 +27846,7 @@ exports.parseRemoteCandidates = parser.parseRemoteCandidates;
 exports.parseImageAttributes = parser.parseImageAttributes;
 exports.parseSimulcastStreamList = parser.parseSimulcastStreamList;
 
-},{"./parser":36,"./writer":37}],36:[function(require,module,exports){
+},{"./parser":38,"./writer":39}],38:[function(require,module,exports){
 var toIntIfInt = function (v) {
   return String(Number(v)) === v ? Number(v) : v;
 };
@@ -27727,7 +27972,7 @@ exports.parseSimulcastStreamList = function (str) {
   });
 };
 
-},{"./grammar":34}],37:[function(require,module,exports){
+},{"./grammar":36}],39:[function(require,module,exports){
 var grammar = require('./grammar');
 
 // customized util.format - discards excess arguments and can void middle ones
@@ -27843,7 +28088,7 @@ module.exports = function (session, opts) {
   return sdp.join('\r\n') + '\r\n';
 };
 
-},{"./grammar":34}],38:[function(require,module,exports){
+},{"./grammar":36}],40:[function(require,module,exports){
 module.exports={
   "name": "jssip",
   "title": "JsSIP",
@@ -27875,6 +28120,7 @@ module.exports={
   "dependencies": {
     "@types/debug": "^4.1.5",
     "@types/node": "^14.14.13",
+    "jssip-node-websocket": "^3.0.0",
     "debug": "^4.3.1",
     "events": "^3.2.0",
     "sdp-transform": "^2.14.1"

@@ -5,6 +5,8 @@ import {IncomingRequest, IncomingResponse, OutgoingRequest} from './SIPMessage'
 import {NameAddrHeader} from './NameAddrHeader'
 import {URI} from './URI'
 import {causes, DTMF_TRANSPORT} from './Constants'
+import {MediaConnection} from "./MediaConnection";
+import {UA, UAConfiguration} from "./UA";
 
 interface RTCPeerConnectionDeprecated extends RTCPeerConnection {
   /**
@@ -235,6 +237,8 @@ declare enum SessionStatus {
 export class RTCSession extends EventEmitter {
   static get C(): typeof SessionStatus;
 
+  constructor(ua: UA);
+
   get C(): typeof SessionStatus;
 
   get causes(): typeof causes;
@@ -268,7 +272,9 @@ export class RTCSession extends EventEmitter {
 
   isReadyToReOffer(): boolean;
 
-  answer(options?: AnswerOptions): void;
+  connect(target: string, options: any, initCallback: (RTCSession) => void)
+
+  answer(mediaConnection: MediaConnection, options?: AnswerOptions): void;
 
   terminate(options?: TerminateOptions): void;
 
