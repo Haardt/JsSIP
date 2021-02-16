@@ -16261,48 +16261,55 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
   _createClass(RTCPeerMediaConnection, [{
     key: "setup",
-    value: function setup(pcConfig, rtcConstraints) {
-      console.log("***** PC CONFIG: ", pcConfig);
-      console.log("***** RTC constraints: ", rtcConstraints);
-      this.rtcPeerConnection = new RTCPeerConnection(pcConfig, rtcConstraints);
+    // TODO: Remove from connection api
+    value: function setup(pcConfig, iceConnectionStateCallback) {
+      var _this2 = this;
+
+      this.rtcPeerConnection = new RTCPeerConnection(pcConfig);
+      this.rtcPeerConnection.addEventListener('iceconnectionstatechange', function () {
+        iceConnectionStateCallback(_this2.rtcPeerConnection.iceConnectionState);
+      });
     }
   }, {
     key: "receiveSdpOffer",
     value: function receiveSdpOffer(options) {
-      var _this2 = this;
+      var _this3 = this;
 
-      return this.rtcPeerConnection.createOffer(options).then(function (offer) {
-        _this2.setLocalSdp(offer);
-
-        return offer;
-      });
+      return this.rtcPeerConnection.signalingState === 'stable' ? this.rtcPeerConnection.createOffer(options).then(function (offer) {
+        return Promise.all([Promise.resolve(offer), _this3.setLocalSdp(offer)]);
+      }) : Promise.resolve([{
+        sdp: null,
+        type: null
+      }, null]);
     }
   }, {
     key: "receiveSdpAnswer",
     value: function receiveSdpAnswer(options) {
-      var _this3 = this;
+      var _this4 = this;
 
       return this.rtcPeerConnection.createAnswer(options).then(function (offer) {
-        _this3.setLocalSdp(offer);
+        _this4.setLocalSdp(offer);
 
         return offer;
       });
     }
   }, {
-    key: "registerIceUpdates",
-    value: function registerIceUpdates(constraints, type, callback) {
-      var _this4 = this;
+    key: "addTrack",
+    value: function addTrack(track, stream) {
+      this.rtcPeerConnection.addTrack(track, stream);
+    }
+  }, {
+    key: "getLocalSdp",
+    value: function getLocalSdp(constraints, type) {
+      var _this5 = this;
 
       if (this.iceGatheringState === 'complete' && (!constraints || !constraints.iceRestart)) {
-        // Move out
-        //this._rtcReady = true;
         var e = {
           originator: 'local',
           type: type,
           sdp: this.getLocalSdp().sdp
         };
-        callback('ready', e);
-        return Promise.resolve(e.sdp);
+        return Promise.resolve(e);
       }
 
       return new Promise(function (resolve) {
@@ -16311,26 +16318,25 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
         var iceGatheringStateListener;
 
         var ready = function ready() {
-          _this4.rtcPeerConnection.removeEventListener('icecandidate', iceCandidateListener);
+          _this5.rtcPeerConnection.removeEventListener('icecandidate', iceCandidateListener);
 
-          _this4.rtcPeerConnection.removeEventListener('icegatheringstatechange', iceGatheringStateListener);
+          _this5.rtcPeerConnection.removeEventListener('icegatheringstatechange', iceGatheringStateListener);
 
           finished = true;
           var e = {
             originator: 'local',
             type: type,
-            sdp: _this4.getLocalSdp().sdp
+            sdp: _this5._getLocalSdp().sdp
           };
-          callback('ready', e);
-          resolve(e.sdp);
+          resolve(e);
         };
 
-        _this4.rtcPeerConnection.addEventListener('icecandidate', iceCandidateListener = function iceCandidateListener(event) {
+        _this5.rtcPeerConnection.addEventListener('icecandidate', iceCandidateListener = function iceCandidateListener(event) {
           var candidate = event.candidate;
 
           if (candidate) {
-            callback('icecandidate', {
-              candidate: candidate,
+            _this5.emit('icecandidate', {
+              candidate: event.candidate,
               ready: ready
             });
           } else if (!finished) {
@@ -16338,34 +16344,31 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
           }
         });
 
-        _this4.rtcPeerConnection.addEventListener('icegatheringstatechange', iceGatheringStateListener = function iceGatheringStateListener() {
-          if (_this4.iceGatheringState === 'complete' && !finished) {
+        _this5.rtcPeerConnection.addEventListener('icegatheringstatechange', iceGatheringStateListener = function iceGatheringStateListener() {
+          if (_this5.iceGatheringState === 'complete' && !finished) {
             ready();
           }
         });
       });
-    } // TODO: The 'user' has to create a mediastream
-
-  }, {
-    key: "prepareStreams",
-    value: function prepareStreams(mediaConstraints) {
-      var _this5 = this;
-
-      return navigator.mediaDevices.getUserMedia(mediaConstraints).then(function (stream) {
-        stream.getTracks().forEach(function (track) {
-          _this5.addTrack(track, stream);
-        });
-        return stream;
-      });
     }
   }, {
-    key: "onIceConnectionEvent",
-    value: function onIceConnectionEvent(callback) {
+    key: "sendDTMF",
+    value: function sendDTMF(tones, duration, interToneGap) {
       var _this6 = this;
 
-      this.rtcPeerConnection.addEventListener('iceconnectionstatechange', function () {
-        callback(_this6.iceConnectionState);
-      });
+      var getDTMFSender = function getDTMFSender() {
+        var sender = _this6.rtcPeerConnection.getSenders().find(function (rtpSender) {
+          return rtpSender.track && rtpSender.track.kind === 'audio';
+        });
+
+        if (!(sender && sender.dtmf)) {
+          return;
+        }
+
+        return sender.dtmf;
+      };
+
+      getDTMFSender().insertDTMF(tones, duration, interToneGap);
     } // Used by exposed peer-connection (tryit-jssip)
 
   }, {
@@ -16389,11 +16392,11 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
     key: "setRemoteDescription",
     value: function setRemoteDescription(sdp) {
       return this.rtcPeerConnection.setRemoteDescription(sdp);
-    } //TODO: Only one RtcSession consumer!
+    } //TODO: remove / make private
 
   }, {
-    key: "getLocalSdp",
-    value: function getLocalSdp() {
+    key: "_getLocalSdp",
+    value: function _getLocalSdp() {
       return this.rtcPeerConnection.localDescription;
     } // TODO: make private
 
@@ -16402,12 +16405,6 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
     //TODO: make private
     value: function setLocalSdp(sdp) {
       return this.rtcPeerConnection.setLocalDescription(sdp);
-    } //TODO: make private
-
-  }, {
-    key: "addTrack",
-    value: function addTrack(track, stream) {
-      this.rtcPeerConnection.addTrack(track, stream);
     } // TODO: make private
 
   }, {
@@ -16431,19 +16428,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
     key: "type",
     get: function get() {
       return this._type;
-    } // Getter
-
-  }, {
-    key: "signalingState",
-    get: function get() {
-      this.rtcPeerConnection.signalingState;
     }
-  }, {
-    key: "iceConnectionState",
-    get: function get() {
-      this.rtcPeerConnection.iceConnectionState;
-    } // TODO: make private
-
   }, {
     key: "iceGatheringState",
     get: function get() {
@@ -18064,14 +18049,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
       if (transportType === JsSIP_C.DTMF_TRANSPORT.RFC2833) {
         // Send DTMF in current audio RTP stream.
-        var sender = this._getDTMFRTPSender();
-
-        if (sender) {
-          // Add remaining buffered tones.
-          tones = sender.toneBuffer + tones; // Insert tones.
-
-          sender.insertDTMF(tones, duration, interToneGap);
-        }
+        this._connection.sendDTMF(tones, duration, interToneGap);
 
         return;
       }
@@ -18784,20 +18762,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "_createRTCConnection",
     value: function _createRTCConnection(pcConfig, rtcConstraints) {
-      // this._connection.setup(pcConfig, rtcConstraints);
-      // this._connection.onIceConnectionEvent((state) =>
-      // {
-      //   // TODO: Do more with different states.
-      //   if (state === 'failed')
-      //   {
-      //     this.terminate({
-      //       cause         : JsSIP_C.causes.RTP_TIMEOUT,
-      //       status_code   : 408,
-      //       reason_phrase : JsSIP_C.causes.RTP_TIMEOUT
-      //     });
-      //   }
-      // });
-      debug('emit "peerconnection"'); //TODO: AH emove Expose mediaConnection: bad?
+      debug('emit "peerconnection"'); //TODO: AH remove expose mediaConnection: bad?
 
       this.emit('peerconnection', {
         peerconnection: this._connection
@@ -18834,19 +18799,13 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
           });
         }
       }).then(function () {
-        return mediaConnection.registerIceUpdates(constraints, type, function (eventType, event) {
-          if (eventType === 'ready') {
-            _this12._rtcReady = true;
-            debug('emit "sdp"');
+        console.log("**** HIER!!!!");
+        return mediaConnection.getLocalSdp(constraints, type);
+      }).then(function (localDescription) {
+        _this12.emit('sdp', localDescription);
 
-            _this12.emit('sdp', event);
-          } else if (eventType === 'icecandidate') {
-            _this12.emit('icecandidate', {
-              candidate: event.candidate,
-              ready: event.ready
-            });
-          }
-        });
+        _this12._rtcReady = true;
+        return localDescription.sdp;
       });
     }
     /**
@@ -19379,15 +19338,11 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
         _this20._connecting(_this20._request);
 
-        if (_this20._connection.type === 'BrowserMediaConnection') {
-          return _this20._createLocalDescription('offer', rtcOfferConstraints)["catch"](function (error) {
-            _this20._failed('local', null, JsSIP_C.causes.WEBRTC_ERROR);
+        return _this20._createLocalDescription('offer', rtcOfferConstraints)["catch"](function (error) {
+          _this20._failed('local', null, JsSIP_C.causes.WEBRTC_ERROR);
 
-            throw error;
-          });
-        } else {
-          return _this20._connection.getLocalSdp();
-        }
+          throw error;
+        });
       }).then(function (desc) {
         if (_this20._is_canceled || _this20._status === C.STATUS_TERMINATED) {
           throw new Error('terminated');
@@ -19410,24 +19365,6 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
         console.log("Can't send invite!", error);
         debugerror(error);
       });
-    }
-    /**
-     * Get DTMF RTCRtpSender.
-     */
-
-  }, {
-    key: "_getDTMFRTPSender",
-    value: function _getDTMFRTPSender() {
-      var sender = this._connection.getSenders().find(function (rtpSender) {
-        return rtpSender.track && rtpSender.track.kind === 'audio';
-      });
-
-      if (!(sender && sender.dtmf)) {
-        debugerror('sendDTMF() | no local audio track to send DTMF with');
-        return;
-      }
-
-      return sender.dtmf;
     }
     /**
      * Reception of Response for Initial INVITE
@@ -19563,14 +19500,11 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
             this._connectionPromiseQueue = this._connectionPromiseQueue.then(function () {
               // Be ready for 200 with SDP after a 180/183 with SDP.
               // We created a SDP 'answer' for it, so check the current signaling state.
-              // TODO: Hide signalingState or name it: iceSignalingState()?
-              if (_this21._connection.signalingState === 'stable') {
-                return _this21._connection.receiveSdpOffer(_this21._rtcOfferConstraints)["catch"](function (error) {
-                  _this21._acceptAndTerminate(response, 500, error.toString());
+              return _this21._connection.receiveSdpOffer(_this21._rtcOfferConstraints)["catch"](function (error) {
+                _this21._acceptAndTerminate(response, 500, error.toString());
 
-                  _this21._failed('local', response, JsSIP_C.causes.WEBRTC_ERROR);
-                });
-              }
+                _this21._failed('local', response, JsSIP_C.causes.WEBRTC_ERROR);
+              });
             }).then(function () {
               _this21._connection.setRemoteDescription(_answer).then(function () {
                 // Handle Session Timers.
@@ -23689,7 +23623,6 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
       credentials: {}
     };
     _this._configuration = Object.assign({}, config.settings);
-    _this._mediaConnection = mediaConnection;
     _this._dynConfiguration = {};
     _this._dialogs = {}; // User actions outside any session/dialog (MESSAGE).
 
@@ -24197,30 +24130,24 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
       if (!request.to_tag) {
         switch (method) {
           case JsSIP_C.INVITE:
-            if (this._mediaConnection) {
-              // TODO
-              if (request.hasHeader('replaces')) {
-                var replaces = request.replaces;
-                dialog = this._findDialog(replaces.call_id, replaces.from_tag, replaces.to_tag);
+            if (request.hasHeader('replaces')) {
+              var replaces = request.replaces;
+              dialog = this._findDialog(replaces.call_id, replaces.from_tag, replaces.to_tag);
 
-                if (dialog) {
-                  session = dialog.owner;
+              if (dialog) {
+                session = dialog.owner;
 
-                  if (!session.isEnded()) {
-                    session.receiveRequest(request);
-                  } else {
-                    request.reply(603);
-                  }
+                if (!session.isEnded()) {
+                  session.receiveRequest(request);
                 } else {
-                  request.reply(481);
+                  request.reply(603);
                 }
               } else {
-                session = new RTCSession(this);
-                session.init_incoming(request);
+                request.reply(481);
               }
             } else {
-              debugerror('INVITE received but WebRTC is not supported');
-              request.reply(488);
+              session = new RTCSession(this);
+              session.init_incoming(request);
             }
 
             break;
