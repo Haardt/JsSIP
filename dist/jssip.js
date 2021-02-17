@@ -18049,7 +18049,7 @@ module.exports = /*#__PURE__*/function (_EventEmitter) {
 
       if (transportType === JsSIP_C.DTMF_TRANSPORT.RFC2833) {
         // Send DTMF in current audio RTP stream.
-        this._connection.sendDTMF(tones, duration, interToneGap);
+        this._connection.sendInbandDTMF(tones, duration, interToneGap);
 
         return;
       }
