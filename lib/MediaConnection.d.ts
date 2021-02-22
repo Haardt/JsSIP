@@ -3,8 +3,6 @@ import * as EventEmitter from "events";
 type MediaConnectionType = 'NodeMediaConnection' | 'BrowserMediaConnection';
 
 export interface MediaConnection extends EventEmitter {
-    type: MediaConnectionType;
-
     receiveSdpOffer(options: any): Promise<RTCSessionDescriptionInit>
 
     receiveSdpAnswer(options: any): Promise<RTCSessionDescriptionInit>
@@ -12,8 +10,6 @@ export interface MediaConnection extends EventEmitter {
     setLocalSdp(sdp: RTCSessionDescriptionInit): Promise<void>
 
     setRemoteDescription(sdp: RTCSessionDescriptionInit): Promise<void>
-
-    getLocalSdp(): void
 
     sendInbandDTMF(tones: number, duration: number, interToneGap: number): void
 
