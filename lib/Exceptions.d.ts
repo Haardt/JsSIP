@@ -22,3 +22,7 @@ export class NotSupportedError extends BaseError {
 export class NotReadyError extends BaseError {
   constructor(message: string);
 }
+
+export class InvalidMediaConnectionError extends BaseError {
+  constructor(message: string);
+}
