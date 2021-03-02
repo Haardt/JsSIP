@@ -16166,8 +16166,8 @@ debugerror.log = console.warn.bind(console);
  * interface MediaConnection {
  *  attribute String example
  *
- *  method receiveSdpOffer(sdp);
- *  method receiveSdpAnswer(sdp);
+ *  method createSdpOffer(sdp);
+ *  method createSdpAnswer(sdp);
  *  method getLocalSdp();
  *  method addTracks([tracks]);
  *  method removeTracks([tracks]);

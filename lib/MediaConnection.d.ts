@@ -9,7 +9,7 @@ export interface MediaConnection extends EventEmitter {
 
     setLocalSdp(sdp: RTCSessionDescriptionInit): Promise<void>
 
-    setRemoteDescription(sdp: RTCSessionDescriptionInit): Promise<void>
+    setRemoteSdp(sdp: RTCSessionDescriptionInit): Promise<void>
 
     sendInbandDTMF(tones: number, duration: number, interToneGap: number): void
 
