@@ -3,9 +3,9 @@ import * as EventEmitter from "events";
 type MediaConnectionType = 'NodeMediaConnection' | 'BrowserMediaConnection';
 
 export interface MediaConnection extends EventEmitter {
-    receiveSdpOffer(options: any): Promise<RTCSessionDescriptionInit>
+    createSdpOffer(options: any): Promise<RTCSessionDescriptionInit>
 
-    receiveSdpAnswer(options: any): Promise<RTCSessionDescriptionInit>
+    createSdpAnswer(options: any): Promise<RTCSessionDescriptionInit>
 
     setLocalSdp(sdp: RTCSessionDescriptionInit): Promise<void>
 
