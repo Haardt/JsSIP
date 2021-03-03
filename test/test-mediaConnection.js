@@ -1,21 +1,33 @@
 require('./include/common');
 const JsSIP = require('../');
 const pkg = require('../package.json');
-const {isMediaConnection} = require("../lib/MediaConnection");
 const RTCPeerMediaConnection = require("../lib/MediaConnection/RTCPeerMediaConnection");
+const {isMediaConnection} = require("../lib-es5/MediaConnection");
 
 
 module.exports = {
 
-  'test faulty MediaConnection' : function(test)
+  '#isMediaConnection should return false if not all required functions are implemented' : function(test)
   {
     test.equal(isMediaConnection({}), false);
     test.done();
   },
 
-  'test valid MediaConnection' : function(test)
+  '#isMediaConnection should return true if the connection is valid' : function(test)
   {
-    test.equal(isMediaConnection(new RTCPeerMediaConnection()), true);
+     test.equal(isMediaConnection(
+        {
+          createSdpOffer: () => {},
+          createSdpAnswer: () => {},
+          setRemoteSdp: () => {},
+          addTrack: () => {},
+          removeTracks: () => {},
+          getLocalSdp: () => {},
+          sendInbandDTMF: () => {},
+          getDTMFSender: () => {},
+          close: () => {}
+        }
+    ), true);
     test.done();
   },
 };
