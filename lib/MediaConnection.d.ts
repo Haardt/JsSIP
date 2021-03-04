@@ -1,21 +1,23 @@
 import * as EventEmitter from "events";
 
-type MediaConnectionType = 'NodeMediaConnection' | 'BrowserMediaConnection';
-
 export interface MediaConnection extends EventEmitter {
-    createSdpOffer(rtcSessionDescription: RTCSessionDescription): Promise<void>
+    createSdpOffer(rtcSessionDescription: RTCOfferOptions): Promise<RTCSessionDescription>
 
-    createSdpAnswer(options: RTCOfferOptions): Promise<void>
+    createSdpAnswer(options: RTCOfferOptions): Promise<RTCSessionDescription>
 
-    setLocalSdp(sdp: RTCSessionDescriptionInit): Promise<void>
+    setLocalSdp(sdp: RTCSessionDescription): Promise<void>
 
-    setRemoteSdp(sdp: RTCSessionDescriptionInit): Promise<void>
+    setRemoteSdp(sdp: RTCSessionDescription): Promise<void>
 
-    sendInbandDTMF(tones: number, duration: number, interToneGap: number): void
+    sendDTMF(tones: number, duration: number, interToneGap: number): void
+
+    getRemoteTracks(): Array<MediaStreamTrack>
+
+    getLocalTracks(): Array<MediaStreamTrack>
 
     addTrack(track: MediaStreamTrack, stream: MediaStream): void
 
     removeTracks(): void
 
-    close(): void;
+    close(): void
 }

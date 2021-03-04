@@ -20,10 +20,13 @@ module.exports = {
           createSdpOffer: () => {},
           createSdpAnswer: () => {},
           setRemoteSdp: () => {},
+          setLocalSdp: () => {},
           addTrack: () => {},
           removeTracks: () => {},
+          getLocalTracks: () => {},
+          getRemoteTracks: () => {},
           getLocalSdp: () => {},
-          sendInbandDTMF: () => {},
+          sendDTMF: () => {},
           getDTMFSender: () => {},
           close: () => {}
         }
