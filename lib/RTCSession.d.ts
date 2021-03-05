@@ -272,7 +272,7 @@ export class RTCSession extends EventEmitter {
 
   isReadyToReOffer(): boolean;
 
-  connect(target: string, options: any, initCallback: (RTCSession) => void)
+  connect(target: string, options: any, initCallback: (RTCSession) => void): void;
 
   answer(mediaConnection: MediaConnection, options?: AnswerOptions): void;
 
