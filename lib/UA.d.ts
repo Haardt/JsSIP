@@ -8,7 +8,7 @@ import {Message, SendMessageOptions} from './Message'
 import {Registrator} from './Registrator'
 import {URI} from './URI'
 import {causes} from './Constants'
-import {MediaConnection} from "./MediaConnection";
+import {MediaConnection} from "./MediaConnectionInterface";
 
 export interface UnRegisterOptions {
   all?: boolean;
