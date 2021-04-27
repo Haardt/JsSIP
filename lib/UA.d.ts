@@ -8,7 +8,7 @@ import {Message, SendMessageOptions} from './Message'
 import {Registrator} from './Registrator'
 import {URI} from './URI'
 import {causes} from './Constants'
-import {MediaConnection} from "./MediaConnectionInterface";
+import {MediaConnection, MediaConnectionInterface} from "./MediaConnectionInterface";
 
 export interface UnRegisterOptions {
   all?: boolean;
@@ -116,6 +116,7 @@ export interface UAEventMap {
   newRTCSession: RTCSessionListener;
   newMessage: MessageListener;
   sipEvent: SipEventListener;
+  updateIncomingMediaConnection: void;
 }
 
 export interface UAContactOptions {
@@ -145,7 +146,7 @@ declare enum UAStatus {
 export class UA extends EventEmitter {
   static get C(): typeof UAStatus;
 
-  constructor(configuration: UAConfiguration, mediaConnection: MediaConnection);
+  constructor(configuration: UAConfiguration);
 
   get C(): typeof UAStatus;
 

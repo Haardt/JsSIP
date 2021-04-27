@@ -1,6 +1,6 @@
 import * as EventEmitter from "events";
 
-export interface MediaConnection extends EventEmitter {
+export interface MediaConnectionInterface extends EventEmitter {
     createSdpOffer(options: RTCOfferOptions): Promise<RTCSessionDescription>
 
     createSdpAnswer(options: RTCOfferOptions): Promise<RTCSessionDescription>

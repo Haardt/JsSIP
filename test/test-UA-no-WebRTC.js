@@ -1,6 +1,8 @@
 /* eslint no-console: 0*/
 
 require('./include/common');
+const TestMediaConnection = require("./include/testMediaConnection");
+
 const testUA = require('./include/testUA');
 const JsSIP = require('../');
 
@@ -13,7 +15,7 @@ module.exports = {
       function()
       {
         /* eslint no-unused-vars: 0*/
-        const ua = new JsSIP.UA({ 'lalala': 'lololo' });
+        const ua = new JsSIP.UA({ 'lalala': 'lololo' }, new TestMediaConnection());
       },
       // Error validation.
       // NOTE: We should use JsSIP.Exceptions.ConfigurationError, but
@@ -34,7 +36,7 @@ module.exports = {
 
     config.sockets = wsSocket;
 
-    const ua = new JsSIP.UA(config);
+    const ua = new JsSIP.UA(config, new TestMediaConnection());
 
     test.ok(ua instanceof(JsSIP.UA));
 

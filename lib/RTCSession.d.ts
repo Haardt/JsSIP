@@ -5,7 +5,7 @@ import {IncomingRequest, IncomingResponse, OutgoingRequest} from './SIPMessage'
 import {NameAddrHeader} from './NameAddrHeader'
 import {URI} from './URI'
 import {causes, DTMF_TRANSPORT} from './Constants'
-import {MediaConnection} from "./MediaConnection";
+import {MediaConnection} from "./MediaConnection/MediaConnection";
 import {UA, UAConfiguration} from "./UA";
 
 interface RTCPeerConnectionDeprecated extends RTCPeerConnection {
