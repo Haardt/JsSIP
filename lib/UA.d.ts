@@ -8,6 +8,7 @@ import {Message, SendMessageOptions} from './Message'
 import {Registrator} from './Registrator'
 import {URI} from './URI'
 import {causes} from './Constants'
+import {MediaConnection, MediaConnectionInterface} from "./MediaConnectionInterface";
 
 export interface UnRegisterOptions {
   all?: boolean;
@@ -115,6 +116,7 @@ export interface UAEventMap {
   newRTCSession: RTCSessionListener;
   newMessage: MessageListener;
   sipEvent: SipEventListener;
+  updateIncomingMediaConnection: void;
 }
 
 export interface UAContactOptions {
@@ -162,7 +164,7 @@ export class UA extends EventEmitter {
 
   registrator(): Registrator;
 
-  call(target: string, options?: CallOptions): RTCSession;
+  call(target: string, mediaConnection: MediaConnection, options?: CallOptions): RTCSession;
 
   sendMessage(target: string | URI, body: string, options?: SendMessageOptions): Message;
 
