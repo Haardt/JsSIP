@@ -5,19 +5,19 @@ export interface MediaConnectionInterface extends EventEmitter {
 
     createSdpAnswer(options: RTCOfferOptions): Promise<RTCSessionDescription>
 
-    setLocalSdp(sdp: RTCSessionDescription): Promise<void>
-
     setRemoteSdp(sdp: RTCSessionDescription): Promise<void>
 
-    sendDTMF(tones: number, duration: number, interToneGap: number): void
-
-    getRemoteTracks(): Array<MediaStreamTrack>
-
-    getLocalTracks(): Array<MediaStreamTrack>
+    setLocalSdp(sdp: RTCSessionDescription): Promise<void>
 
     addTrack(track: MediaStreamTrack, stream: MediaStream): void
 
+    getLocalTracks(): Array<MediaStreamTrack>
+
+    getRemoteTracks(): Array<MediaStreamTrack>
+
     removeTracks(): void
+
+    sendDTMF(tones: number, duration: number, interToneGap: number): void
 
     close(): void
 }

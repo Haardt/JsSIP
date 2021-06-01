@@ -15,7 +15,7 @@ module.exports = {
       function()
       {
         /* eslint no-unused-vars: 0*/
-        const ua = new JsSIP.UA({ 'lalala': 'lololo' }, new TestMediaConnection());
+        const ua = new JsSIP.UA({ 'lalala': 'lololo' });
       },
       // Error validation.
       // NOTE: We should use JsSIP.Exceptions.ConfigurationError, but
@@ -36,7 +36,7 @@ module.exports = {
 
     config.sockets = wsSocket;
 
-    const ua = new JsSIP.UA(config, new TestMediaConnection());
+    const ua = new JsSIP.UA(config);
 
     test.ok(ua instanceof(JsSIP.UA));
 

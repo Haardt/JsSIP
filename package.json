@@ -1,8 +1,8 @@
 {
-  "name": "@starface/jssip",
+  "name": "jssip",
   "title": "JsSIP",
   "description": "the Javascript SIP library",
-  "version": "3.7.6",
+  "version": "3.7.1",
   "homepage": "https://jssip.net",
   "author": "José Luis Millán <jmillan@aliax.net> (https://github.com/jmillan)",
   "contributors": [
@@ -33,9 +33,6 @@
     "events": "^3.2.0",
     "jssip-node-websocket": "^3.0.0",
     "sdp-transform": "^2.14.1"
-  },
-  "publishConfig": {
-    "@starface:registry": "https://gitlab.com/api/v4/projects/24469951/packages/npm/"
   },
   "devDependencies": {
     "@babel/core": "^7.12.10",

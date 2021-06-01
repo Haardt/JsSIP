@@ -116,7 +116,6 @@ export interface UAEventMap {
   newRTCSession: RTCSessionListener;
   newMessage: MessageListener;
   sipEvent: SipEventListener;
-  updateIncomingMediaConnection: void;
 }
 
 export interface UAContactOptions {
